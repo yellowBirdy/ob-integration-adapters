@@ -1,10 +1,10 @@
-import { BasePoolMath } from "../../base/PoolMath";
+import { BasePoolMath } from "../../base/BasePoolMath";
 import type { TemplateBasePoolState } from "./TemplateBasePoolState";
 
 export class TemplatePoolMath extends BasePoolMath<TemplateBasePoolState> {
 	override swapExactInput(
 		pool: TemplateBasePoolState,
-		token0ToToken1: boolean,
+		zeroToOne: boolean,
 		amountIn: bigint,
 	): bigint {
 		return amountIn;
@@ -12,7 +12,7 @@ export class TemplatePoolMath extends BasePoolMath<TemplateBasePoolState> {
 
 	override swapExactOutput(
 		pool: TemplateBasePoolState,
-		token0ToToken1: boolean,
+		zeroToOne: boolean,
 		amountOut: bigint,
 	): bigint {
 		return amountOut;
@@ -20,7 +20,7 @@ export class TemplatePoolMath extends BasePoolMath<TemplateBasePoolState> {
 
 	override spotPriceWithoutFee(
 		pool: TemplateBasePoolState,
-		token0ToToken1: boolean,
+		zeroToOne: boolean,
 	): number {
 		return 1;
 	}

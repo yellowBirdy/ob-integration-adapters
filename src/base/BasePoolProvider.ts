@@ -45,6 +45,11 @@ export abstract class BasePoolStateProvider<TPool extends BasePoolState> {
 
 	// TO IMPLEMENT
 
+	/**
+	 * Handles the logic for getting all the pools that are currently active on a given DEX
+	 * should also return the state of the given pools too.
+	 * Can do either a query on-chain or an external API
+	 */
 	abstract getAllPools(): Promise<TPool[]>;
 
 	/**
@@ -57,7 +62,8 @@ export abstract class BasePoolStateProvider<TPool extends BasePoolState> {
 	): Promise<void>;
 
 	/**
-	 * Given a pool and amountIn, how would a swap be carried out
+	 * Given a pool and amountIn, how would a swap be carried out.
+	 * It should use the `client` to make a transaction on-chain
 	 * This method will be used as a reference. In practise, this will be implemented in the OBRouter
 	 */
 	abstract swap(pool: TPool, amountIn: bigint): Promise<void>;

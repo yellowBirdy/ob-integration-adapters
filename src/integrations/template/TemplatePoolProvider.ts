@@ -3,10 +3,10 @@ import {
 	erc20Abi,
 	zeroAddress,
 } from "viem";
-import { BasePoolStateProvider } from "../../base/PoolStateProvider";
+import { BasePoolStateProvider } from "../../base/BasePoolProvider";
 import type { TemplateBasePoolState } from "./TemplateBasePoolState";
 
-export class TemplatePoolStateProvider extends BasePoolStateProvider<TemplateBasePoolState> {
+export class TemplatePoolProvider extends BasePoolStateProvider<TemplateBasePoolState> {
 	readonly abi = erc20Abi;
 
 	async getAllPools(): Promise<TemplateBasePoolState[]> {
