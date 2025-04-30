@@ -66,5 +66,9 @@ export abstract class BasePoolStateProvider<TPool extends BasePoolState> {
 	 * It should use the `client` to make a transaction on-chain
 	 * This method will be used as a reference. In practise, this will be implemented in the OBRouter
 	 */
-	abstract swap(pool: TPool, amountIn: bigint): Promise<void>;
+	abstract swap(
+		pool: TPool,
+		amountIn: bigint,
+		zeroToOne: boolean,
+	): Promise<void>;
 }
