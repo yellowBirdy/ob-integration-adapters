@@ -24,4 +24,6 @@ export interface NablaPoolState extends BasePoolState {
   beta1: bigint;
   c0: bigint;
   c1: bigint;
+  assetDecimals0: bigint;
+  assetDecimals1: bigint;
 } 

@@ -7,9 +7,11 @@ import {
 import { BasePoolStateProvider } from "../../base/BasePoolProvider";
 import { PORTAL_ADDRESS, QUOTE_API_URL, PRICE_FEED_ID_TO_ASSET as idToAsset } from "./constants";
 import type { NablaPoolState } from "./NablaPoolState";
+import { erc20Abi } from "viem";
 import { NablaPortalAbi } from "./abis/Portal";
 import { NablaSwapPoolAbi } from "./abis/SwapPool";
 import { NablaBackstopPoolAbi } from "./abis/BackstopPool";
+import { NablaCurveAbi } from "./abis/NablaCurve";
 import { AddressMap } from "../../helpers/AddressMap";
 import type { AssetPrice, PriceFeedUpdate } from "./NablaTypes";
 import { EventSource } from 'eventsource';
@@ -185,10 +187,50 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
             functionName: "swapFees",
           });
         }
-        
+     
         const fees = (await this.client.multicall({
           contracts: getFeesCalls,
         })).map( result => (result.result as bigint[]).reduce((acc, fee) => acc + fee, 0n));
+
+        const getCurveAddressCalls: any[] = pools.map(pool => ({
+          address: pool,
+          abi,
+          functionName: "curve",
+        }))
+        const curveAddresses = (await this.client.multicall({
+          contracts: getCurveAddressCalls,
+        })).map(result => result.result as bigint);
+          const getAssetDecimalsCalls: any[] = tokens.map(token => ({
+          address: token,
+          abi: NablaSwapPoolAbi,
+          functionName: "slippageCurve",
+        }))
+
+        
+        const getCurveBetaCalls: any[] = [];
+        const getCurveCCalls: any[] = [];
+        for (const curve of curveAddresses) {
+          getCurveBetaCalls.push({
+            address: curve,
+            abi: NablaCurveAbi,
+            functionName: "beta",
+          })
+          getCurveCCalls.push({
+            address: curve,
+            abi: NablaCurveAbi,
+            functionName: "c",
+          })
+        }
+        const curveBetas = (await this.client.multicall({
+          contracts: getCurveBetaCalls,
+        })).map(result => result.result as bigint);
+        const curveCs = (await this.client.multicall({
+          contracts: getCurveCCalls,
+        })).map(result => result.result as bigint);
+
+        const assetDecimals = (await this.client.multicall({
+          contracts: getAssetDecimalsCalls,
+        })).map(result => result.result as bigint);
 
         for (let i = 0; i < pools.length; i++) {
           for (let j = i + 1; j < pools.length; j++) {
@@ -207,6 +249,12 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
             const pool1 = pools[j] as Address;
             const fee0 = fees[i] as bigint;
             const fee1 = fees[j] as bigint;
+            const assetDecimals0 = assetDecimals[i] as bigint;
+            const assetDecimals1 = assetDecimals[j] as bigint;
+            const beta0 = curveBetas[i] as bigint;
+            const beta1 = curveBetas[j] as bigint;
+            const c0 = curveCs[i] as bigint;
+            const c1 = curveCs[j] as bigint;
             results.push({
               token0,
               token1,
@@ -222,6 +270,12 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
               fee1,
               totalLiabilities0,
               totalLiabilities1,
+              assetDecimals0,
+              assetDecimals1,
+              beta0,
+              beta1,
+              c0,
+              c1,
             } as NablaPoolState);
             if (!this.poolToVirtualAddress.has(pool0)) {
               this.poolToVirtualAddress.set(pool0, new Set([address]));
