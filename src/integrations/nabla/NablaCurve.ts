@@ -73,10 +73,10 @@ class NablaCurve {
     }
 
     private solveQuadratic(a: bigint, b: bigint, c: bigint): bigint {
-        let discriminant = b * b - 4n * a * c;
+        let discriminant = b * b - (4n * a * c);
         discriminant = discriminant < 0n ? 0n : discriminant;
         
-        const almostSolution = ( -b - this.sqrt(discriminant)) / (2n * a);
+        const almostSolution = ( -b + this.sqrt(discriminant)) / (2n * a);
         const solution = almostSolution < 0n ? 0n : almostSolution;
 
         return solution;

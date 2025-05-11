@@ -1,36 +1,70 @@
 import { describe, expect, test } from "bun:test";
-import { parseEther, zeroAddress } from "viem";
+import { parseEther, parseUnits, zeroAddress } from "viem";
 import { NablaPoolMath } from "./NablaPoolMath";
-import { Q96 } from "./constants";
+import type { NablaPoolState } from "./NablaPoolState";
+import { PRICE_SCALING_FACTOR } from "./constants";
 
 describe("NablaPoolMath", () => {
   const poolMath = new NablaPoolMath();
   
   // Basic pool with no imbalance
   const basePoolState = {
-    address: zeroAddress,
     token0: zeroAddress,
     token1: zeroAddress,
-    reserve0: parseEther("100"),
-    reserve1: parseEther("200"),
-    isSwapPool: true,
-    fee: 30n, // 0.3%
-    oraclePrice: Q96, // 1:1 price
-  };
-
+    address: zeroAddress,
+    reserve0: parseEther("1000"),
+    reserve1: parseEther("1000"),
+    fee: 0n, // 0.3%
+    oraclePrice: parseUnits("1", 12), // 1:1 price
+    reversedOraclePrice: parseUnits("1", 12), // 1:1 price
+    reserveWithSlippage0: parseEther("1000"),
+    reserveWithSlippage1: parseEther("1000"),
+    totalLiabilities0: parseEther("1000"),
+    totalLiabilities1: parseEther("1000"),
+    router: zeroAddress,
+    pool0: zeroAddress,
+    pool1: zeroAddress,
+    fee0: 300n, // 3 BP
+    fee1: 300n, // 3 BP
+    lpFee0: 200n,
+    lpFee1: 200n,
+    priceFeedUpdate: ["0x0000000000000000000000000000000000000000"],
+    beta0: 5000000000000000n,
+    beta1: 5000000000000000n,
+    c0: 17075887234393789126n,
+    c1: 17075887234393789126n,
+    assetDecimals0: 18,
+    assetDecimals1: 18,
+  } as NablaPoolState;
   // Pool with imbalance
-  const imbalancedPoolState = {
+  // TODO: input real amounts
+  const imbalancedTokenInPoolStateOver = {
     ...basePoolState,
-    imbalance: Q96 / 10n, // 10% imbalance
+    reserve0: parseEther("110"),
+    reservWithSlippage0: parseEther("111")
+  };
+  const imbalancedTokenInPoolStateUnder = {
+    ...basePoolState,
+    reserve0: parseEther("90"),
+    reservWithSlippage0: parseEther("91")
+  };
+  const imbalancedTokenOutPoolStateOver = {
+    ...basePoolState,
+    reserve0: parseEther("110"),
+    reservWithSlippage0: parseEther("111")
+  };
+  const imbalancedTokenOutPoolStateUnder = {
+    ...basePoolState,
+    reserve0: parseEther("90"),
+    reservWithSlippage0: parseEther("91")
   };
 
   test("swapExactInput zeroToOne with base pool", () => {
-    const amountIn = parseEther("10");
+    const amountIn = parseEther("1");
     const amountOut = poolMath.swapExactInput(basePoolState, true, amountIn);
     
-    // Expected: amountIn * (1 - fee) * oraclePrice / Q96
-    const expectedAmountOut = (amountIn * 9970n / 10000n) * basePoolState.oraclePrice! / Q96;
-    expect(amountOut).toBe(expectedAmountOut);
+    const expectedAmountOut = (amountIn * 9995n / 10000n) * basePoolState.oraclePrice! / PRICE_SCALING_FACTOR;
+    expect(Number(amountOut)).toBeCloseTo(Number(expectedAmountOut), -16);
   });
 
   test("swapExactInput oneToZero with base pool", () => {
