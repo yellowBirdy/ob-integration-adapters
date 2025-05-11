@@ -1,11 +1,8 @@
 import { BasePoolMath } from "../../base/BasePoolMath";
 import type { NablaPoolState } from "./NablaPoolState";
 import  NablaCurve  from "./NablaCurve";
-
+import { PRICE_SCALING_FACTOR, FEE_PRECISION } from "./constants";
 export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
-  // Scaling factor for precision calculations
-  private readonly Q96 = 2n ** 96n;
-  
   /**
    * Calculate the amount of tokens received for an exact input amount
    * 
@@ -26,36 +23,72 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
     // For initial implementation, use a simplified model based on oracle price
     // This will be replaced with the actual Nabla math formula
     let amountOut: bigint;
-    let feeAmount: bigint;
 
-    if (zeroToOne) {
-      // token0 to token1: multiply by oracle price
-      const curveIn = new NablaCurve(pool.beta0, pool.c0);
-      const curveOut = new NablaCurve(pool.beta1, pool.c1);
+    const {
+      oraclePrice, reversedOraclePrice, assetDecimals0, assetDecimals1, 
+      reserve0, reserve1, reserveWithSlippage0, reserveWithSlippage1, 
+      totalLiabilities0, totalLiabilities1, fee0, fee1, lpFee0, lpFee1
+    } = pool;
 
+    // intiaize by direction
+    const curveIn = zeroToOne ? new NablaCurve(pool.beta0, pool.c0) : new NablaCurve(pool.beta1, pool.c1);
+    const curveOut = zeroToOne ? new NablaCurve(pool.beta1, pool.c1) : new NablaCurve(pool.beta0, pool.c0);
+    const reserveIn = zeroToOne ? reserve0 : reserve1;
+    const reserveOut = zeroToOne ? reserve1 : reserve0;
+    const totalLiabilitiesIn = zeroToOne ? totalLiabilities0 : totalLiabilities1;
+    const totalLiabilitiesOut = zeroToOne ? totalLiabilities1 : totalLiabilities0;
 
-      const effectiveAmountIn = curveIn.inverseHorizontal(pool.reserve0, pool.totalLiabilities0, pool.reserveWithSlippage0 + amountIn, pool.assetDecimals0);
-      
-      
-      amountOut = (amountIn * pool.oraclePrice) / BigInt(1e10);
-    
-      // Apply fee
-      feeAmount = 0n;// (amountIn * pool.fee1) / 10000n;
-      amountOut = amountOut - feeAmount;
+    const reserveWithSlippageIn = zeroToOne ? reserveWithSlippage0 : reserveWithSlippage1;
+    const reserveWithSlippageOut = zeroToOne ? reserveWithSlippage1 : reserveWithSlippage0;
+    const decimalsIn = zeroToOne ? assetDecimals0 : assetDecimals1;
+    const decimalsOut = zeroToOne ? assetDecimals1 : assetDecimals0;
+
+    const fee = zeroToOne ? fee1 : fee0;
+    const lpFee = zeroToOne ? lpFee1 : lpFee0;
+
+    const price = zeroToOne ? oraclePrice : reversedOraclePrice;
+
+    // COMPUTE
+    // ADJUST FOR IN TOKEN POOL IMBALANCE
+    const effectiveAmountIn = curveIn.inverseHorizontal(reserveIn, totalLiabilitiesIn, reserveWithSlippageIn + amountIn, BigInt(decimalsIn));
+
+    // AMOUNT OUT BEFORE FEES AND OUT TOKEN POOL IMBALANCE
+    let scalingFactor;
+    if (decimalsIn > decimalsOut) {
+      scalingFactor = PRICE_SCALING_FACTOR * BigInt(10 ** (decimalsIn - decimalsOut));
     } else {
-      // token1 to token0: divide by oracle price
-      
-      amountOut = (amountIn * pool.reversedOraclePrice) / BigInt(1e10);
-
-      // Apply fee
-      feeAmount = 0n;// (amountIn * pool.fee1) / 10000n;
-      amountOut = amountOut - feeAmount;
+      scalingFactor = PRICE_SCALING_FACTOR / BigInt(10 ** (decimalsOut - decimalsIn));
     }
+    const rawAmountOut = effectiveAmountIn * price / scalingFactor;
 
-    // Adjust for imbalance if present
-    if (pool.reserveWithSlippage0 !== pool.reserve0 || pool.reserveWithSlippage1 !== pool.reserve1) {
-      // Simplified imbalance adjustment - will be replaced with actual formula
+    // COMPUTE FEES
+    const feeAmount = rawAmountOut * fee / FEE_PRECISION;
+    const maxLpFee = rawAmountOut * lpFee / FEE_PRECISION;
+
+    // ADJUST FOR OUT TOKEN POOL IMBALANCE
+
+    // COMPUTE ACTUAL LP FEE
+    const reducedReserveOut = reserveOut - rawAmountOut + feeAmount;
+
+    let actualLpFeeAmount = curveOut.inverseDiagonal(
+      reducedReserveOut, totalLiabilitiesOut, reserveWithSlippageOut, BigInt(decimalsOut)
+    );
+    actualLpFeeAmount = actualLpFeeAmount > maxLpFee ? maxLpFee : actualLpFeeAmount;
+   
+    // COMPUTE ACTUAL REDUCED RESERVE AND TOTAL LIABILITIES
+    const actualReducedReserveOut = reducedReserveOut + actualLpFeeAmount;
+    const actualTotalLiabilitiesOut = totalLiabilitiesOut + actualLpFeeAmount;
+
+    // COMPUTE EFFECTIVE RESERVE WITH SLIPPAGE AFTER AMOUNT OUT
+    let reserveWithSlippageAfterAmountOut = curveOut.psi(
+      actualReducedReserveOut, actualTotalLiabilitiesOut, BigInt(decimalsOut)
+    );
+
+    // COMPUTE ACTUAL AMOUNT OUT
+    if (reserveWithSlippageAfterAmountOut > reserveWithSlippageOut) {
+      reserveWithSlippageAfterAmountOut = reserveWithSlippageOut;
     }
+    amountOut = reserveWithSlippageOut - reserveWithSlippageAfterAmountOut;
 
     return amountOut;
   }

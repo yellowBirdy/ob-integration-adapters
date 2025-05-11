@@ -4,7 +4,8 @@ import type { Address } from "viem";
 export const PORTAL_ADDRESS = "0x0000000000000000000000000000000000000000" as Address;
 
 // Oracle precision scaling factor (2^96)
-export const Q96 = 2n ** 96n; 
+export const PRICE_SCALING_FACTOR = BigInt(1e12);
+export const FEE_PRECISION = BigInt(1e6);
 //TODO: add quote api url
 export const QUOTE_API_URL = "https://antenna.nabla.fi/v1/updates/price/";
 

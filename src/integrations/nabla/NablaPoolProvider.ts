@@ -188,10 +188,18 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
           });
         }
      
-        const fees = (await this.client.multicall({
+        const fees: bigint[] = [];
+        const lpFees: bigint[] = [];
+        const feeQueryResult = await this.client.multicall({
           contracts: getFeesCalls,
-        })).map( result => (result.result as bigint[]).reduce((acc, fee) => acc + fee, 0n));
+        })
+      // ).map( result => (result.result as bigint[]).reduce((acc, fee) => acc + fee, 0n));
 
+        for (const result of feeQueryResult) {
+          const [lpFee, backstopFee, protocolFee] = result.result as bigint[];
+          fees.push(backstopFee as bigint + (protocolFee as bigint));
+          lpFees.push(lpFee as bigint);
+        }
         const getCurveAddressCalls: any[] = pools.map(pool => ({
           address: pool,
           abi,
@@ -249,8 +257,10 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
             const pool1 = pools[j] as Address;
             const fee0 = fees[i] as bigint;
             const fee1 = fees[j] as bigint;
-            const assetDecimals0 = assetDecimals[i] as bigint;
-            const assetDecimals1 = assetDecimals[j] as bigint;
+            const lpFee0 = lpFees[i] as bigint;
+            const lpFee1 = lpFees[j] as bigint;
+            const assetDecimals0 = Number(assetDecimals[i]);
+            const assetDecimals1 = Number(assetDecimals[j]);
             const beta0 = curveBetas[i] as bigint;
             const beta1 = curveBetas[j] as bigint;
             const c0 = curveCs[i] as bigint;
@@ -268,6 +278,8 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
               pool1,
               fee0,
               fee1,
+              lpFee0,
+              lpFee1,
               totalLiabilities0,
               totalLiabilities1,
               assetDecimals0,
@@ -330,7 +342,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
             backstopFee: bigint;
             protocolFee: bigint;
           };
-          await this.updatePoolFees(log.address, args.lpFee + args.backstopFee +args.protocolFee);
+          await this.updatePoolFees(log.address, args.backstopFee + args.protocolFee, args.lpFee);
           return;
         }
 
@@ -417,7 +429,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
   /**
    * Update the fees for a specific pool
    */
-  private async updatePoolFees(poolAddress: Address, newFees: bigint): Promise<void> {
+  private async updatePoolFees(poolAddress: Address, newFees: bigint, newLpFees: bigint): Promise<void> {
     try {
       const virtualAddress = this.poolToVirtualAddress.get(poolAddress);
       if (!virtualAddress) throw new Error("Pool not found");
@@ -426,8 +438,10 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
       if (!pool) throw new Error("Virtual pool not found");
       if (pool.token0 === poolAddress) {
         pool.fee0 = newFees;
+        pool.lpFee0 = newLpFees;
       } else {
           pool.fee1 = newFees;
+          pool.lpFee1 = newLpFees;
         }
       }
     } catch (error) {

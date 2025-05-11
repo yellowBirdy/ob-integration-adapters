@@ -19,11 +19,13 @@ export interface NablaPoolState extends BasePoolState {
   pool1: Address;
   fee0: bigint;
   fee1: bigint;
+  lpFee0: bigint;
+  lpFee1: bigint;
   priceFeedUpdate: `0x${string}`[];
   beta0: bigint;
   beta1: bigint;
   c0: bigint;
   c1: bigint;
-  assetDecimals0: bigint;
-  assetDecimals1: bigint;
+  assetDecimals0: number;
+  assetDecimals1: number;
 } 
