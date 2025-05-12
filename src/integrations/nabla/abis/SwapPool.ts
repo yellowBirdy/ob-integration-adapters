@@ -1506,25 +1506,19 @@ export const NablaSwapPoolAbi = [
     "name": "ReserveUpdated",
     "inputs": [
       {
-        "name": "oldReserve",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      },
-      {
         "name": "newReserve",
         "type": "uint256",
         "indexed": true,
         "internalType": "uint256"
       },
       {
-        "name": "oldReserveWithSlippage",
+        "name": "newReserveWithSlippage",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
       },
       {
-        "name": "newReserveWithSlippage",
+        "name": "newTotalLiabilities",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"

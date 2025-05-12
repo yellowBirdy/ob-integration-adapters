@@ -10,20 +10,17 @@ import type { NablaPoolState } from "./NablaPoolState";
 import { erc20Abi } from "viem";
 import { NablaPortalAbi } from "./abis/Portal";
 import { NablaSwapPoolAbi } from "./abis/SwapPool";
-import { NablaBackstopPoolAbi } from "./abis/BackstopPool";
 import { NablaCurveAbi } from "./abis/NablaCurve";
+import { NablaEffectiveAbi } from "./abis/NablaEffectiveAbi";
 import { AddressMap } from "../../helpers/AddressMap";
 import type { AssetPrice, PriceFeedUpdate } from "./NablaTypes";
 import { EventSource } from 'eventsource';
+import { NablaRouterAbi } from "./abis/NablaRouter";
 
 
 export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
   // Combined ABI for all events we want to track
-  readonly abi = [
-    ...NablaPortalAbi,
-    ...NablaSwapPoolAbi,
-    ...NablaBackstopPoolAbi,
-  ];
+  readonly abi = NablaEffectiveAbi;
 
   poolToVirtualAddress = new AddressMap<Set<Address>>();
 
@@ -92,7 +89,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
       // 1. Get routers from portal
       const routers = await this.client.readContract({
         address: PORTAL_ADDRESS,
-        abi,
+        abi: NablaPortalAbi,
         functionName: "getRouters",
       }) as Address[];
 
@@ -101,7 +98,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
       for (const router of routers) {
         getRouterAssetsCalls.push({
           address: PORTAL_ADDRESS,
-          abi,
+          abi: NablaPortalAbi,
           functionName: "getRouterAssets",
           args: [router],
         });
@@ -125,7 +122,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
         for (const asset of assets) {
           getRouterPoolsCalls.push({
             address: router,
-            abi,
+            abi: NablaRouterAbi,
             functionName: "poolByAsset",
             args: [asset],
           });
@@ -147,7 +144,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
         for (const pool of pools) {
           getReservesCalls.push({
             address: pool,
-            abi,
+            abi: NablaSwapPoolAbi,
             functionName: "reserve",
           });
         }
@@ -159,7 +156,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
         for (const pool of pools) {
           getReserveWithSlippageCalls.push({
             address: pool,
-            abi,
+            abi: NablaSwapPoolAbi,
             functionName: "reserveWithSlippage",
           });
         };
@@ -171,7 +168,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
         for (const pool of pools) {
           getTotalLiabilitiesCalls.push({
             address: pool,
-            abi,
+            abi: NablaSwapPoolAbi,
             functionName: "totalLiabilities",
           });
         }
@@ -183,7 +180,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
         for (const pool of pools) {
           getFeesCalls.push({
             address: pool,
-            abi,
+            abi: NablaSwapPoolAbi,
             functionName: "swapFees",
           });
         }
@@ -202,18 +199,12 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
         }
         const getCurveAddressCalls: any[] = pools.map(pool => ({
           address: pool,
-          abi,
-          functionName: "curve",
+          abi: NablaSwapPoolAbi,
+          functionName: "slippageCurve",
         }))
         const curveAddresses = (await this.client.multicall({
           contracts: getCurveAddressCalls,
         })).map(result => result.result as bigint);
-          const getAssetDecimalsCalls: any[] = tokens.map(token => ({
-          address: token,
-          abi: NablaSwapPoolAbi,
-          functionName: "slippageCurve",
-        }))
-
         
         const getCurveBetaCalls: any[] = [];
         const getCurveCCalls: any[] = [];
@@ -236,6 +227,11 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
           contracts: getCurveCCalls,
         })).map(result => result.result as bigint);
 
+        const getAssetDecimalsCalls: any[] = tokens.map(token => ({
+          address: token,
+          abi: erc20Abi,
+          functionName: "decimals",
+        }))
         const assetDecimals = (await this.client.multicall({
           contracts: getAssetDecimalsCalls,
         })).map(result => result.result as bigint);
@@ -322,11 +318,8 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
           // Update pool states based on swap event
           console.log("Reserve updated event detected at swap pool:", log.address);
           const args = log.args as {
-            oldReserve: bigint;
             newReserve: bigint;
-            oldReserveWithSlippage: bigint;
             newReserveWithSlippage: bigint;
-            oldTotalLiabilities: bigint;
             newTotalLiabilities: bigint;
           };
 
