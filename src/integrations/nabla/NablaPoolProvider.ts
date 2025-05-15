@@ -354,6 +354,23 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
           await this.fetchPools();
           return;
         }
+        // PriceFeed events
+        case "TokenRegistered": {
+          // New price feed registered
+          console.log("New price feed registered:", log.address);
+          const args = log.args as {
+            _: Address;
+            token: Address;
+            priceFeedId: `0x${string}`;
+            assetName: string;
+          };
+          if (idToAsset[args.priceFeedId]) {
+            console.log(`Updating price feed id for token: ${args.token}, old id: ${idToAsset[args.priceFeedId]}, new id: ${args.priceFeedId}`);
+          } 
+          idToAsset[args.priceFeedId] = args.token;
+          console.log(`Price feed id set for token: ${args.token}, new id: ${args.priceFeedId}`);
+          return;
+        }
       }
     } catch (error) {
       console.error("Error handling event:", error);

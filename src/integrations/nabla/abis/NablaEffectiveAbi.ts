@@ -106,5 +106,37 @@ export const NablaEffectiveAbi = [
           }
         ],
         "anonymous": false
+    },
+    // PRICE FEED EVENTS
+    {
+        "type": "event",
+        "name": "TokenRegistered",
+        "inputs": [
+          {
+            "name": "sender",
+            "type": "address",
+            "indexed": true,
+            "internalType": "address"
+          },
+          {
+            "name": "token",
+            "type": "address",
+            "indexed": false,
+            "internalType": "address"
+          },
+          {
+            "name": "priceFeedId",
+            "type": "bytes32",
+            "indexed": false,
+            "internalType": "bytes32"
+          },
+          {
+            "name": "assetName",
+            "type": "string",
+            "indexed": false,
+            "internalType": "string"
+          }
+        ],
+        "anonymous": false
     }
 ] as const;
