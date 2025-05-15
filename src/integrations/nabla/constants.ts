@@ -1,13 +1,13 @@
 import type { Address } from "viem";
 
 
-export const PORTAL_ADDRESS = "0x0000000000000000000000000000000000000000" as Address;
+export const PORTAL_ADDRESS = "0x1F917Fe724F186a1fFA7744A73afed18C335b9eC" as Address;
 
 // Oracle precision scaling factor (2^96)
 export const PRICE_SCALING_FACTOR = BigInt(1e12);
 export const FEE_PRECISION = BigInt(1e6);
 //TODO: add quote api url
-export const QUOTE_API_URL = "https://antenna.nabla.fi/v1/updates/price/";
+export const QUOTE_API_URL = "https://antenna.nabla.fi/v1/updates/price/stream";
 
 
 export const ASSET_TO_PRICE_FEED_ID: { [key: Address]: string } = {

@@ -5,7 +5,7 @@ import {
   zeroAddress,
 } from "viem";
 import { BasePoolStateProvider } from "../../base/BasePoolProvider";
-import { PORTAL_ADDRESS, QUOTE_API_URL, PRICE_FEED_ID_TO_ASSET as idToAsset } from "./constants";
+import { PORTAL_ADDRESS, QUOTE_API_URL, PRICE_FEED_ID_TO_ASSET as idToAsset, PRICE_SCALING_FACTOR } from "./constants";
 import type { NablaPoolState } from "./NablaPoolState";
 import { erc20Abi } from "viem";
 import { NablaPortalAbi } from "./abis/Portal";
@@ -23,6 +23,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
   readonly abi = NablaEffectiveAbi;
 
   poolToVirtualAddress = new AddressMap<Set<Address>>();
+  assetToPool = new AddressMap<Address>();
 
   priceFeedUpdate: PriceFeedUpdate | null = null;
   priceFeedUpdateListener: EventSource | null = null;
@@ -35,7 +36,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
 
   async setupPriceFeedListener() {
     // SSE connection to price feed
-    const quoteApi = new EventSource(QUOTE_API_URL + "stream/");
+    const quoteApi = new EventSource(QUOTE_API_URL);
     quoteApi.onmessage = (event) => {
       const update: PriceFeedUpdate = JSON.parse(event.data);
       this.priceFeedUpdate = update;
@@ -47,7 +48,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
         }
         const asset = idToAsset[price.id];
         if (!asset) {
-          console.error(`Asset not found for price feed id ${price.id}`);
+          // console.error(`Asset not found for price feed id ${price.id}`);
           continue;
         }
         this.assetPrices.set(asset, assetPrice);
@@ -55,14 +56,13 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
 
       for (const [asset0, price0] of this.assetPrices.entries()) {
         for (const [asset1, price1] of this.assetPrices.entries()) {
-          const virtualAddress = this.getPoolVirtualAddress([asset0, asset1]);
+          const virtualAddress = this.getPoolVirtualAddress([this.assetToPool.get(asset0) as Address, this.assetToPool.get(asset1) as Address]);
           const pool = this.pools.get(virtualAddress);
           if (!pool) {
             continue;
           }
-
-          const pairPrice = price0.price * BigInt(1e10) / price1.price;
-          const reversedPairPrice = price1.price * BigInt(1e10) / price0.price;
+          const pairPrice = BigInt(price0.price) * PRICE_SCALING_FACTOR / BigInt(price1.price);
+          const reversedPairPrice = BigInt(price1.price) * PRICE_SCALING_FACTOR / BigInt(price0.price);
 
           this.updateOraclePrice(virtualAddress, pairPrice, reversedPairPrice, this.priceFeedUpdate?.binary.data);
         }
@@ -71,7 +71,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
     }
 
     quoteApi.onerror = (error) => {
-      console.log("Error receiving price updatesupdates:", error);
+      console.log("Error receiving price updates:", error);
     };
 
     //TODO: add onclose handler
@@ -237,6 +237,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
         })).map(result => result.result as bigint);
 
         for (let i = 0; i < pools.length; i++) {
+          this.assetToPool.set(tokens[i] as Address, pools[i] as Address);
           for (let j = i + 1; j < pools.length; j++) {
 
             const token0 = tokens[i] as Address;
