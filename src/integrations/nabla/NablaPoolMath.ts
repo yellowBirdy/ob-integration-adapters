@@ -1,6 +1,6 @@
 import { BasePoolMath } from "../../base/BasePoolMath";
 import type { NablaPoolState } from "./NablaPoolState";
-import  NablaCurve  from "./NablaCurve";
+import  NablaCurve, { mul, div } from "./NablaCurve";
 import { PRICE_SCALING_FACTOR, FEE_PRECISION } from "./constants";
 export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
   /**
@@ -29,7 +29,6 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
       reserve0, reserve1, reserveWithSlippage0, reserveWithSlippage1, 
       totalLiabilities0, totalLiabilities1, fee0, fee1, lpFee0, lpFee1
     } = pool;
-
     // intiaize by direction
     const curveIn = zeroToOne ? new NablaCurve(pool.beta0, pool.c0) : new NablaCurve(pool.beta1, pool.c1);
     const curveOut = zeroToOne ? new NablaCurve(pool.beta1, pool.c1) : new NablaCurve(pool.beta0, pool.c0);
@@ -51,7 +50,6 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
     // COMPUTE
     // ADJUST FOR IN TOKEN POOL IMBALANCE
     const effectiveAmountIn = curveIn.inverseHorizontal(reserveIn, totalLiabilitiesIn, reserveWithSlippageIn + amountIn, BigInt(decimalsIn));
-
     // AMOUNT OUT BEFORE FEES AND OUT TOKEN POOL IMBALANCE
     let scalingFactor;
     if (decimalsIn > decimalsOut) {
@@ -59,6 +57,7 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
     } else {
       scalingFactor = PRICE_SCALING_FACTOR / BigInt(10 ** (decimalsOut - decimalsIn));
     }
+
     const rawAmountOut = effectiveAmountIn * price / scalingFactor;
 
     // COMPUTE FEES
@@ -124,7 +123,7 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
       throw new Error("Pool missing required price data");
     }
     // Without imbalance, just return the oracle price
-    return zeroToOne ? Number(pool.oraclePrice) / 1e10 : Number(pool.reversedOraclePrice) / 1e10;
+    return zeroToOne ? Number(pool.oraclePrice) / Number(PRICE_SCALING_FACTOR) : Number(pool.reversedOraclePrice) / Number(PRICE_SCALING_FACTOR);
   }
 
 } 

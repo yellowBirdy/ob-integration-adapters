@@ -1,8 +1,24 @@
 import { describe, expect, test } from "bun:test";
 import { parseEther, parseUnits, zeroAddress } from "viem";
 import { NablaPoolMath } from "./NablaPoolMath";
+import  NablaCurve  from "./NablaCurve";
 import type { NablaPoolState } from "./NablaPoolState";
-import { PRICE_SCALING_FACTOR } from "./constants";
+
+
+describe("Nabla slippage curve", () => {
+  test("inverse horizontal", () => {
+    const curveIn = new NablaCurve(5000000000000000n, 17075887234393789126n);
+    const reserveIn = 1000000000000000000000n
+    const totalLiabilitiesIn = 1000000000000000000000n
+    const reserveWithSlippageIn = 1000000000000000000000n
+    const amountIn = 100000000000000000000n
+    const decimalsIn = 18
+    const effectiveAmountIn = curveIn.inverseHorizontal(reserveIn, totalLiabilitiesIn, reserveWithSlippageIn + amountIn, BigInt(decimalsIn));
+    expect(effectiveAmountIn).toBe(99997249253573525485n);
+
+  });
+  
+});
 
 describe("NablaPoolMath", () => {
   const poolMath = new NablaPoolMath();
@@ -37,99 +53,113 @@ describe("NablaPoolMath", () => {
     assetDecimals1: 18,
   } as NablaPoolState;
   // Pool with imbalance
-  // TODO: input real amounts
-  const imbalancedTokenInPoolStateOver = {
+
+
+  const imbalancedPoolReal = {
     ...basePoolState,
-    reserve0: parseEther("110"),
-    reservWithSlippage0: parseEther("111")
+      reserve0:1099997249253573525485n,
+      reserveWithSlippage0: parseEther("1100"),
+      reserve1: 900052749371053261277n,
+      reserveWithSlippage1: 900055528992381704580n,
+      totalLiabilities1: 1000019999449850714705n,
   };
-  const imbalancedTokenInPoolStateUnder = {
-    ...basePoolState,
-    reserve0: parseEther("90"),
-    reservWithSlippage0: parseEther("91")
+
+  const imbalancedPoolRealDifferentOraclePrice = {
+    ...imbalancedPoolReal,
+    oraclePrice: parseUnits("2", 12),
+    reversedOraclePrice: parseUnits("0.5", 12),
   };
-  const imbalancedTokenOutPoolStateOver = {
-    ...basePoolState,
-    reserve0: parseEther("110"),
-    reservWithSlippage0: parseEther("111")
-  };
-  const imbalancedTokenOutPoolStateUnder = {
-    ...basePoolState,
-    reserve0: parseEther("90"),
-    reservWithSlippage0: parseEther("91")
-  };
+  
 
   test("swapExactInput zeroToOne with base pool", () => {
     const amountIn = parseEther("1");
     const amountOut = poolMath.swapExactInput(basePoolState, true, amountIn);
-    
-    const expectedAmountOut = (amountIn * 9995n / 10000n) * basePoolState.oraclePrice! / PRICE_SCALING_FACTOR;
-    expect(Number(amountOut)).toBeCloseTo(Number(expectedAmountOut), -16);
+  
+    // Magic number from the real pool
+    const expectedAmountOut = 999499447081423335n;
+    expect(amountOut).toBe(expectedAmountOut);
   });
 
   test("swapExactInput oneToZero with base pool", () => {
     const amountIn = parseEther("10");
     const amountOut = poolMath.swapExactInput(basePoolState, false, amountIn);
-    
-    // Expected: amountIn * (1 - fee) * Q96 / oraclePrice
-    const expectedAmountOut = (amountIn * 9970n / 10000n) * Q96 / basePoolState.oraclePrice!;
+
+    // Magic number from the real pool
+    const expectedAmountOut = 9994944708456040182n;
     expect(amountOut).toBe(expectedAmountOut);
   });
 
-  test("swapExactInput zeroToOne with imbalanced pool", () => {
-    const amountIn = parseEther("10");
-    const amountOut = poolMath.swapExactInput(imbalancedPoolState, true, amountIn);
+  test("swapExactInput zeroToOne with real imbalanced ", () => {
+    const amountIn = parseEther("1");
+    const amountOut = poolMath.swapExactInput(imbalancedPoolReal, true, amountIn);
     
-    // Base amount: amountIn * (1 - fee) * oraclePrice / Q96
-    const baseAmount = (amountIn * 9970n / 10000n) * imbalancedPoolState.oraclePrice! / Q96;
-    
-    // Apply imbalance: baseAmount * (1 - (Q96 - imbalance) / Q96)
-    const imbalanceAdjustment = baseAmount * (Q96 - imbalancedPoolState.imbalance!) / Q96;
-    const expectedAmountOut = baseAmount - imbalanceAdjustment;
-    
+    // Magic number from the real pool
+    const expectedAmountOut = 999388867509266416n; 
     expect(amountOut).toBe(expectedAmountOut);
   });
 
-  test("swapExactOutput zeroToOne with base pool", () => {
-    const amountOut = parseEther("10");
-    const amountIn = poolMath.swapExactOutput(basePoolState, true, amountOut);
+  test("swapExactInput oneToZero with real imbalanced ", () => {
+    const amountIn = parseEther("100");
+    const amountOut = poolMath.swapExactInput(imbalancedPoolReal, false, amountIn);
     
-    // Expected: amountOut * Q96 / oraclePrice * (1 / (1 - fee))
-    const expectedAmountIn = amountOut * Q96 / basePoolState.oraclePrice! * 10000n / 9970n;
-    expect(amountIn).toBe(expectedAmountIn);
+    // Magic number from the real pool
+    const expectedAmountOut = 99955528977429623139n;   
+    expect(amountOut).toBe(expectedAmountOut);
   });
 
-  test("swapExactOutput oneToZero with base pool", () => {
-    const amountOut = parseEther("10");
-    const amountIn = poolMath.swapExactOutput(basePoolState, false, amountOut);
+  test("swapExactInput zeroToOne with real imbalanced different oracle price", () => {
+    let amountIn = parseEther("1");
+    let amountOut = poolMath.swapExactInput(imbalancedPoolRealDifferentOraclePrice, true, amountIn);
     
-    // Expected: amountOut * oraclePrice / Q96 * (1 / (1 - fee))
-    const expectedAmountIn = amountOut * basePoolState.oraclePrice! / Q96 * 10000n / 9970n;
-    expect(amountIn).toBe(expectedAmountIn);
+    // Magic number from the real pool
+    let expectedAmountOut = 1998777172854114531n; 
+    expect(amountOut).toBe(expectedAmountOut);
+
+
+    amountIn = parseEther("294.1103");
+    amountOut = poolMath.swapExactInput(imbalancedPoolRealDifferentOraclePrice, true, amountIn);
+    
+    // Magic number from the real pool
+    expectedAmountOut = 587714666553705261983n; 
+    expect(amountOut).toBe(expectedAmountOut);
   });
+
+  test("swapExactInput oneToZero with real imbalanced different oracle price", () => {
+    let amountIn = parseEther("100");
+    let amountOut = poolMath.swapExactInput(imbalancedPoolRealDifferentOraclePrice, false, amountIn);
+    
+    // Magic number from the real pool
+    let expectedAmountOut = 49978449948289449651n;   
+    expect(amountOut).toBe(expectedAmountOut);
+
+
+    amountIn = parseEther("73.248");
+    amountOut = poolMath.swapExactInput(imbalancedPoolRealDifferentOraclePrice, false, amountIn);
+  
+  // Magic number from the real pool
+    expectedAmountOut = 36608621679774251009n;   
+    expect(amountOut).toBe(expectedAmountOut);
+  });
+
 
   test("spotPriceWithoutFee zeroToOne with base pool", () => {
     const price = poolMath.spotPriceWithoutFee(basePoolState, true);
-    // Expected: oraclePrice / Q96 (as number)
-    const expectedPrice = Number(basePoolState.oraclePrice!) / Number(Q96);
-    expect(price).toBe(expectedPrice);
+    expect(price).toBe(1); // Oracle price is 1e10 so price should be 1
   });
 
   test("spotPriceWithoutFee oneToZero with base pool", () => {
     const price = poolMath.spotPriceWithoutFee(basePoolState, false);
-    // Expected: Q96 / oraclePrice (as number)
-    const expectedPrice = Number(Q96) / Number(basePoolState.oraclePrice!);
-    expect(price).toBe(expectedPrice);
+    expect(price).toBe(1); // Oracle price is 1e10 so price should be 1
   });
 
   test("spotPriceWithoutFee zeroToOne with imbalanced pool", () => {
-    const price = poolMath.spotPriceWithoutFee(imbalancedPoolState, true);
-    // Expected: (oraclePrice / Q96) * (1 - imbalance/Q96) (as number)
-    const basePrice = Number(imbalancedPoolState.oraclePrice!) / Number(Q96);
-    const imbalanceFactor = Number(imbalancedPoolState.imbalance!) / Number(Q96);
-    const expectedPrice = basePrice * (1 - imbalanceFactor);
-    
-    expect(price).toBeCloseTo(expectedPrice, 10);
+    const price = poolMath.spotPriceWithoutFee(imbalancedPoolRealDifferentOraclePrice, true);
+    expect(price).toBe(2); // Oracle price is 1e10 so price should be 1
+  });
+
+  test("spotPriceWithoutFee oneToZero with imbalanced pool", () => {
+    const price = poolMath.spotPriceWithoutFee(imbalancedPoolRealDifferentOraclePrice, false);
+    expect(price).toBe(0.5); // Oracle price is 1e10 so price should be 1
   });
 
   test("throws error when pool missing required data", () => {
