@@ -138,5 +138,37 @@ export const NablaEffectiveAbi = [
           }
         ],
         "anonymous": false
-    }
+    },
+    // ORACLE EVENTS
+    {
+      "type": "event",
+      "name": "PriceFeedUpdate",
+      "inputs": [
+        {
+          "name": "id",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "publishTime",
+          "type": "uint64",
+          "indexed": false,
+          "internalType": "uint64"
+        },
+        {
+          "name": "price",
+          "type": "int64",
+          "indexed": false,
+          "internalType": "int64"
+        },
+        {
+          "name": "conf",
+          "type": "uint64",
+          "indexed": false,
+          "internalType": "uint64"
+        }
+      ],
+      "anonymous": false
+    },
 ] as const;
