@@ -83,11 +83,18 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
       actualReducedReserveOut, actualTotalLiabilitiesOut, BigInt(decimalsOut)
     );
 
+    console.log("reserveWithSlippageAfterAmountOut", reserveWithSlippageAfterAmountOut);
+    console.log("reserveWithSlippageOut", reserveWithSlippageOut);
     // COMPUTE ACTUAL AMOUNT OUT
     if (reserveWithSlippageAfterAmountOut > reserveWithSlippageOut) {
       reserveWithSlippageAfterAmountOut = reserveWithSlippageOut;
     }
+    if (reserveWithSlippageAfterAmountOut <= BigInt(0)) {
+      throw new Error("Amount out exceeds reserve");
+    }
+
     amountOut = reserveWithSlippageOut - reserveWithSlippageAfterAmountOut;
+
 
     return amountOut;
   }

@@ -172,4 +172,9 @@ describe("NablaPoolMath", () => {
     expect(() => poolMath.swapExactOutput(invalidPool, true, parseEther("10"))).toThrow();
     expect(() => poolMath.spotPriceWithoutFee(invalidPool, true)).toThrow();
   });
+
+  test("throws error when amount out exceeds reserve", () => {
+    const amountIn = parseEther("950");
+    expect(() => poolMath.swapExactInput(imbalancedPoolReal, true, amountIn)).toThrow("Amount out exceeds reserve");
+  });
 }); 
