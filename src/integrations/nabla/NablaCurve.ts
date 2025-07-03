@@ -42,11 +42,13 @@ class NablaCurve {
         const iCapitalB = this.convertDecimals(capitalB, decimals);
 
         const quadraticA = NablaCurve.MANTISSA + this.c;
+
         const quadraticB = iB + mul(this.c, iL) - 
             mul(iCapitalB - iB, quadraticA);
 
         const factor = mul(iB - iL, iB - iL);
         const quadraticC = mul(this.beta, factor) - mul(iCapitalB - iB, iB + mul(this.c, iL));
+
 
         const t = this.solveQuadratic(quadraticA, quadraticB, quadraticC);
 
@@ -90,7 +92,7 @@ class NablaCurve {
     }
 
 
-    private sqrt(_a: bigint): bigint {
+    public sqrt(_a: bigint): bigint {
         const a = _a * NablaCurve.MANTISSA;
         if (a === 0n) return 0n;
     

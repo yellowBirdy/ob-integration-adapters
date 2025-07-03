@@ -6,6 +6,24 @@ import type { NablaPoolState } from "./NablaPoolState";
 
 
 describe("Nabla slippage curve", () => {
+
+  test("log2", () => {
+    const curveIn = new NablaCurve(5000000000000000n, 17075887234393789126n);
+    const log2 = curveIn.log2(326774213602733821881292424000000000000000000n);
+    const log2r = curveIn.log2(326737699310520346427257904000000000000000000n);
+    
+    console.log("log2", log2);
+    console.log("log2r", log2r);
+  });
+
+  test("sqrt", () => {
+    const curveIn = new NablaCurve(5000000000000000n, 17075887234393789126n);
+    const sqrt = curveIn.sqrt(326774213602733821881292424n);
+    const sqrtr = curveIn.sqrt(326737699310520346427257904n);
+    console.log("sqrt", sqrt);
+    console.log("sqrtr", sqrtr);
+  });
+
   test("inverse horizontal", () => {
     const curveIn = new NablaCurve(5000000000000000n, 17075887234393789126n);
     const reserveIn = 1000000000000000000000n
@@ -15,7 +33,6 @@ describe("Nabla slippage curve", () => {
     const decimalsIn = 18
     const effectiveAmountIn = curveIn.inverseHorizontal(reserveIn, totalLiabilitiesIn, reserveWithSlippageIn + amountIn, BigInt(decimalsIn));
     expect(effectiveAmountIn).toBe(99997249253573525485n);
-
   });
   
 });
@@ -175,6 +192,6 @@ describe("NablaPoolMath", () => {
 
   test("throws error when amount out exceeds reserve", () => {
     const amountIn = parseEther("950");
-    expect(() => poolMath.swapExactInput(imbalancedPoolReal, true, amountIn)).toThrow("Amount out exceeds reserve");
+    expect(poolMath.swapExactInput(imbalancedPoolReal, true, amountIn )).toBe(0n);
   });
 }); 

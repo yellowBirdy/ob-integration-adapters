@@ -147,7 +147,7 @@ export const NablaEffectiveAbi = [
         {
           "name": "id",
           "type": "bytes32",
-          "indexed": true,
+          "indexed": false,
           "internalType": "bytes32"
         },
         {

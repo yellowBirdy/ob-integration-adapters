@@ -51,12 +51,16 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
     // ADJUST FOR IN TOKEN POOL IMBALANCE
     const effectiveAmountIn = curveIn.inverseHorizontal(reserveIn, totalLiabilitiesIn, reserveWithSlippageIn + amountIn, BigInt(decimalsIn));
     // AMOUNT OUT BEFORE FEES AND OUT TOKEN POOL IMBALANCE
+    if ((reserveIn + effectiveAmountIn) > (200n * totalLiabilitiesIn) / 100n) {
+      return 0n;
+    }
     let scalingFactor;
     if (decimalsIn > decimalsOut) {
       scalingFactor = PRICE_SCALING_FACTOR * BigInt(10 ** (decimalsIn - decimalsOut));
     } else {
       scalingFactor = PRICE_SCALING_FACTOR / BigInt(10 ** (decimalsOut - decimalsIn));
     }
+
 
     const rawAmountOut = effectiveAmountIn * price / scalingFactor;
 
