@@ -94,7 +94,7 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
       reserveWithSlippageAfterAmountOut = reserveWithSlippageOut;
     }
     if (reserveWithSlippageAfterAmountOut <= BigInt(0)) {
-      throw new Error("Amount out exceeds reserve");
+      return 0n;
     }
 
     amountOut = reserveWithSlippageOut - reserveWithSlippageAfterAmountOut;
