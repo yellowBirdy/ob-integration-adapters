@@ -21,8 +21,8 @@ class NablaCurve {
     public psi(b: bigint, l: bigint, decimals: bigint): bigint {
         let psi: bigint;
         
-        const iB = this.convertDecimals(b, decimals);
-        const iL = this.convertDecimals(l, decimals);
+        const iB = this.convertToInternalDecimals(b, decimals);
+        const iL = this.convertToInternalDecimals(l, decimals);
 
         if (iB === 0n && iL === 0n) {
             psi = 0n;
@@ -33,13 +33,13 @@ class NablaCurve {
             psi = div(mul(this.beta, diffSquared), iB + mul(this.c, iL)) + iB;
         }
 
-        return this.convertDecimals(psi, decimals);
+        return this.convertToExternalDecimals(psi, decimals);
     }
 
     public inverseDiagonal(b: bigint, l: bigint, capitalB: bigint, decimals: bigint): bigint {
-        const iB = this.convertDecimals(b, decimals);
-        const iL = this.convertDecimals(l, decimals);
-        const iCapitalB = this.convertDecimals(capitalB, decimals);
+        const iB = this.convertToInternalDecimals(b, decimals);
+        const iL = this.convertToInternalDecimals(l, decimals);
+        const iCapitalB = this.convertToInternalDecimals(capitalB, decimals);
 
         const quadraticA = NablaCurve.MANTISSA + this.c;
 
@@ -50,15 +50,16 @@ class NablaCurve {
         const quadraticC = mul(this.beta, factor) - mul(iCapitalB - iB, iB + mul(this.c, iL));
 
 
+        console.log("quadraticC", quadraticC);
         const t = this.solveQuadratic(quadraticA, quadraticB, quadraticC);
 
-        return this.convertDecimals(t, decimals);
+        return this.convertToExternalDecimals(t, decimals);
     }
 
     public inverseHorizontal(b: bigint, l: bigint, capitalB: bigint, decimals: bigint): bigint {
-        const iB = this.convertDecimals(b, decimals);
-        const iL = this.convertDecimals(l, decimals);
-        const iCapitalB = this.convertDecimals(capitalB, decimals);
+        const iB = this.convertToInternalDecimals(b, decimals);
+        const iL = this.convertToInternalDecimals(l, decimals);
+        const iCapitalB = this.convertToInternalDecimals(capitalB, decimals);
 
         const quadraticA = NablaCurve.MANTISSA + this.beta;
         const quadraticB = mul(2n * this.beta, (iB - iL)) - iCapitalB + (2n * iB) + mul(this.c, iL);
@@ -67,10 +68,22 @@ class NablaCurve {
         const quadraticC = mul(this.beta, factor) - mul(iCapitalB - iB, iB + mul(this.c, iL));
 
         const t = this.solveQuadratic(quadraticA, quadraticB, quadraticC);
-        return this.convertDecimals(t, decimals);
+        return this.convertToExternalDecimals(t, decimals);
     }
 
-    private convertDecimals(value: bigint, decimals: bigint): bigint {
+    private convertToInternalDecimals(value: bigint, decimals: bigint): bigint {
+        let convertedValue: bigint;
+
+        if (decimals > NablaCurve.DECIMALS) {
+            convertedValue = value / 10n ** (decimals - NablaCurve.DECIMALS);
+        } else {
+            convertedValue = value * 10n ** (NablaCurve.DECIMALS - decimals);
+        }
+
+        return convertedValue;
+    }
+
+    private convertToExternalDecimals(value: bigint, decimals: bigint): bigint {
         let convertedValue: bigint;
 
         if (decimals > NablaCurve.DECIMALS) {
