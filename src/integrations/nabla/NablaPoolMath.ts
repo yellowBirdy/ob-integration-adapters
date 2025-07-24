@@ -50,8 +50,9 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
     // COMPUTE
     // ADJUST FOR IN TOKEN POOL IMBALANCE
     const effectiveAmountIn = curveIn.inverseHorizontal(reserveIn, totalLiabilitiesIn, reserveWithSlippageIn + amountIn, BigInt(decimalsIn));
-    // AMOUNT OUT BEFORE FEES AND OUT TOKEN POOL IMBALANCE
-    if ((reserveIn + effectiveAmountIn) > (200n * totalLiabilitiesIn) / 100n) {
+    // AMOUNT OUT BEFORE FEES AND OUT TOKEN POOL IMBALANCE 
+    // we only allow 199.5% CR to prevent reverts
+    if ((reserveIn + effectiveAmountIn) > (1995n * totalLiabilitiesIn) / 1000n) {
       return 0n;
     }
     let scalingFactor;
@@ -93,7 +94,9 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
     if (reserveWithSlippageAfterAmountOut > reserveWithSlippageOut) {
       reserveWithSlippageAfterAmountOut = reserveWithSlippageOut;
     }
-    if (reserveWithSlippageAfterAmountOut <= BigInt(0)) {
+    // @dev 0.5% of total liabilities
+    const minReserveWithSlippageAfterAmountOut = (5000n * totalLiabilitiesIn) / 1000000n;
+    if (reserveWithSlippageAfterAmountOut <= minReserveWithSlippageAfterAmountOut){
       return 0n;
     }
 
