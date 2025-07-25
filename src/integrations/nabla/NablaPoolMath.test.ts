@@ -50,6 +50,7 @@ describe("NablaPoolMath", () => {
     fee: 0n, // 0.3%
     oraclePrice: parseUnits("1", 12), // 1:1 price
     reversedOraclePrice: parseUnits("1", 12), // 1:1 price
+    pricePublishTime: BigInt(Date.now() - 1),
     reserveWithSlippage0: parseEther("1000"),
     reserveWithSlippage1: parseEther("1000"),
     totalLiabilities0: parseEther("1000"),
@@ -193,5 +194,13 @@ describe("NablaPoolMath", () => {
   test("throws error when amount out exceeds reserve", () => {
     const amountIn = parseEther("950");
     expect(poolMath.swapExactInput(imbalancedPoolReal, true, amountIn )).toBe(0n);
+  });
+
+  test("throws error when pool price is too old", () => {
+    const pool = {
+      ...basePoolState,
+      pricePublishTime: BigInt(Date.now() - 5000),
+    } as NablaPoolState;
+    expect(() => poolMath.swapExactInput(pool, true, parseEther("10"))).toThrow();
   });
 }); 

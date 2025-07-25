@@ -14,6 +14,7 @@ export interface NablaPoolState extends BasePoolState {
   totalLiabilities1: bigint;
   oraclePrice?: bigint; // Price from the oracle
   reversedOraclePrice?: bigint; // Reversed price from the oracle
+  pricePublishTime?: bigint; // Publish time of the oracle price
   router: Address;
   pool0: Address;
   pool1: Address;

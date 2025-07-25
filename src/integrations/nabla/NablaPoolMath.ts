@@ -1,7 +1,7 @@
 import { BasePoolMath } from "../../base/BasePoolMath";
 import type { NablaPoolState } from "./NablaPoolState";
 import  NablaCurve, { mul, div } from "./NablaCurve";
-import { PRICE_SCALING_FACTOR, FEE_PRECISION } from "./constants";
+import { PRICE_SCALING_FACTOR, FEE_PRECISION, MAX_PRICE_AGE } from "./constants";
 export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
   /**
    * Calculate the amount of tokens received for an exact input amount
@@ -16,8 +16,12 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
     zeroToOne: boolean,
     amountIn: bigint,
   ): bigint {
-    if (!pool.oraclePrice || !pool.reversedOraclePrice) {
-      throw new Error("Pool missing required price or fee data");
+    if (!pool.oraclePrice || !pool.reversedOraclePrice || !pool.pricePublishTime) {
+      throw new Error("Pool missing required price or price publish time");
+    }
+    const now = BigInt(Date.now());
+    if (pool.pricePublishTime < now && (now - pool.pricePublishTime > MAX_PRICE_AGE)) {
+      throw new Error("Pool price is too old");
     }
 
     // For initial implementation, use a simplified model based on oracle price

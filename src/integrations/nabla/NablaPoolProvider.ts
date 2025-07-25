@@ -449,7 +449,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
   /**
    * Update the imbalance for a specific swap pool
    */
-  private async updateOraclePrice(virtualAddress: Address, price: bigint, reversedPrice: bigint, priceFeedUpdate: `0x${string}`[]): Promise<void> {
+  private async updateOraclePrice(virtualAddress: Address, price: bigint, reversedPrice: bigint, priceFeedUpdate: `0x${string}`[], pricePublishTime: bigint): Promise<void> {
     
     try {
       const pool = this.pools.get(virtualAddress);
@@ -457,7 +457,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
       pool.oraclePrice = price;
       pool.reversedOraclePrice = reversedPrice;
       pool.priceFeedUpdate = priceFeedUpdate;
-      
+      pool.pricePublishTime = pricePublishTime;
     } catch (error) {
       console.error(`Error updating oracle price for virtualpool ${virtualAddress}:`, error);
     }
@@ -468,7 +468,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
     if (!assetPrice) {
       return;
     } 
-    const price = assetPrice.price;
+    const {price, publish_time} = assetPrice;
 
     for (const [asset1, price1] of this.assetPrices.entries()) {
       if (asset1 === asset) {
@@ -479,10 +479,12 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
       if (!pool) {
         continue;
       }
-      const pairPrice = BigInt(price) * PRICE_SCALING_FACTOR / BigInt(price1.price);
-      const reversedPairPrice = BigInt(price1.price) * PRICE_SCALING_FACTOR / BigInt(price);
+      const pairPrice = price * PRICE_SCALING_FACTOR / price1.price;
+      const reversedPairPrice = price1.price * PRICE_SCALING_FACTOR / price;
 
-      this.updateOraclePrice(virtualAddress, pairPrice, reversedPairPrice, this.priceFeedUpdate?.binary.data || []);
+      const oldestPublishTime = publish_time > price1.publish_time ? price1.publish_time : publish_time;
+
+      this.updateOraclePrice(virtualAddress, pairPrice, reversedPairPrice, this.priceFeedUpdate?.binary.data || [], oldestPublishTime);
     }
     
   }
@@ -498,10 +500,12 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
         if (!pool) {
           continue;
         }
-        const pairPrice = BigInt(price0.price) * PRICE_SCALING_FACTOR / BigInt(price1.price);
-        const reversedPairPrice = BigInt(price1.price) * PRICE_SCALING_FACTOR / BigInt(price0.price);
+        const pairPrice = price0.price * PRICE_SCALING_FACTOR / price1.price;
+        const reversedPairPrice = price1.price * PRICE_SCALING_FACTOR / price0.price;
 
-        this.updateOraclePrice(virtualAddress, pairPrice, reversedPairPrice, this.priceFeedUpdate?.binary.data || []);
+        const oldestPublishTime = price0.publish_time > price1.publish_time ? price1.publish_time : publish_time;
+
+        this.updateOraclePrice(virtualAddress, pairPrice, reversedPairPrice, this.priceFeedUpdate?.binary.data || [], oldestPublishTime);
       }
     }
   }

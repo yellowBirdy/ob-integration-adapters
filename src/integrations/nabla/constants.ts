@@ -7,6 +7,8 @@ export const PORTAL_ADDRESS = "0x1F917Fe724F186a1fFA7744A73afed18C335b9eC" as Ad
 // Oracle precision scaling factor (2^96)
 export const PRICE_SCALING_FACTOR = BigInt(1e12);
 export const FEE_PRECISION = BigInt(1e6);
+export const MAX_PRICE_AGE = BigInt(4500);  // 4.5 seconds
+
 //TODO: add quote api url
 export const QUOTE_API_URL = "https://antenna.nabla.fi/v1/updates/price/stream";
 
