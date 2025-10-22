@@ -31,7 +31,8 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
     const {
       oraclePrice, reversedOraclePrice, assetDecimals0, assetDecimals1, 
       reserve0, reserve1, reserveWithSlippage0, reserveWithSlippage1, 
-      totalLiabilities0, totalLiabilities1, fee0, fee1, lpFee0, lpFee1
+      totalLiabilities0, totalLiabilities1, fee0, fee1, lpFee0, lpFee1,
+      protocolFee0, protocolFee1
     } = pool;
     // intiaize by direction
     const curveIn = zeroToOne ? new NablaCurve(pool.beta0, pool.c0) : new NablaCurve(pool.beta1, pool.c1);
@@ -48,6 +49,7 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
 
     const fee = zeroToOne ? fee1 : fee0;
     const lpFee = zeroToOne ? lpFee1 : lpFee0;
+    const protocolFee = zeroToOne ? protocolFee1 : protocolFee0;
 
     const price = zeroToOne ? oraclePrice : reversedOraclePrice;
 
@@ -70,13 +72,16 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
     const rawAmountOut = effectiveAmountIn * price / scalingFactor;
 
     // COMPUTE FEES
-    const feeAmount = rawAmountOut * fee / FEE_PRECISION;
+    const bspFeeAmount = rawAmountOut * fee / FEE_PRECISION;
+    const protocolFeeAmount = rawAmountOut * protocolFee / FEE_PRECISION;
+    console.log("--------------------------------protocolFeeAmount", protocolFeeAmount);
+
     const maxLpFee = rawAmountOut * lpFee / FEE_PRECISION;
 
     // ADJUST FOR OUT TOKEN POOL IMBALANCE
 
     // COMPUTE ACTUAL LP FEE
-    const reducedReserveOut = reserveOut - rawAmountOut + feeAmount;
+    const reducedReserveOut = reserveOut - rawAmountOut + bspFeeAmount + protocolFeeAmount;
 
     let actualLpFeeAmount = curveOut.inverseDiagonal(
       reducedReserveOut, totalLiabilitiesOut, reserveWithSlippageOut, BigInt(decimalsOut)

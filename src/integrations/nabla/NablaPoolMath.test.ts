@@ -62,6 +62,8 @@ describe("NablaPoolMath", () => {
     fee1: 300n, // 3 BP
     lpFee0: 200n,
     lpFee1: 200n,
+    protocolFee0: 100n,
+    protocolFee1: 100n,
     priceFeedUpdate: ["0x0000000000000000000000000000000000000000"],
     beta0: 5000000000000000n,
     beta1: 5000000000000000n,
@@ -94,7 +96,7 @@ describe("NablaPoolMath", () => {
     const amountOut = poolMath.swapExactInput(basePoolState, true, amountIn);
   
     // Magic number from the real pool
-    const expectedAmountOut = 999499447081423335n;
+    const expectedAmountOut = 999399447164390453n;
     expect(amountOut).toBe(expectedAmountOut);
   });
 
@@ -103,7 +105,7 @@ describe("NablaPoolMath", () => {
     const amountOut = poolMath.swapExactInput(basePoolState, false, amountIn);
 
     // Magic number from the real pool
-    const expectedAmountOut = 9994944708456040182n;
+    const expectedAmountOut = 9993944716755456354n;
     expect(amountOut).toBe(expectedAmountOut);
   });
 
@@ -112,7 +114,7 @@ describe("NablaPoolMath", () => {
     const amountOut = poolMath.swapExactInput(imbalancedPoolReal, true, amountIn);
     
     // Magic number from the real pool
-    const expectedAmountOut = 999388867509266416n; 
+    const expectedAmountOut = 999288878655122808n; 
     expect(amountOut).toBe(expectedAmountOut);
   });
 
@@ -121,7 +123,7 @@ describe("NablaPoolMath", () => {
     const amountOut = poolMath.swapExactInput(imbalancedPoolReal, false, amountIn);
     
     // Magic number from the real pool
-    const expectedAmountOut = 99955528977429623139n;   
+    const expectedAmountOut = 99945528699304486120n;   
     expect(amountOut).toBe(expectedAmountOut);
   });
 
@@ -130,7 +132,8 @@ describe("NablaPoolMath", () => {
     let amountOut = poolMath.swapExactInput(imbalancedPoolRealDifferentOraclePrice, true, amountIn);
     
     // Magic number from the real pool
-    let expectedAmountOut = 1998777172854114531n; 
+    let expectedAmountOut = 1998577195258299942n; 
+    
     expect(amountOut).toBe(expectedAmountOut);
 
 
@@ -138,7 +141,7 @@ describe("NablaPoolMath", () => {
     amountOut = poolMath.swapExactInput(imbalancedPoolRealDifferentOraclePrice, true, amountIn);
     
     // Magic number from the real pool
-    expectedAmountOut = 587714666553705261983n; 
+    expectedAmountOut =   587655876076133933446n; 
     expect(amountOut).toBe(expectedAmountOut);
   });
 
@@ -147,7 +150,7 @@ describe("NablaPoolMath", () => {
     let amountOut = poolMath.swapExactInput(imbalancedPoolRealDifferentOraclePrice, false, amountIn);
     
     // Magic number from the real pool
-    let expectedAmountOut = 49978449948289449651n;   
+    let expectedAmountOut = 49973449671535241267n;   
     expect(amountOut).toBe(expectedAmountOut);
 
 
@@ -155,7 +158,7 @@ describe("NablaPoolMath", () => {
     amountOut = poolMath.swapExactInput(imbalancedPoolRealDifferentOraclePrice, false, amountIn);
   
   // Magic number from the real pool
-    expectedAmountOut = 36608621679774251009n;   
+    expectedAmountOut = 36604959022922925425n;   
     expect(amountOut).toBe(expectedAmountOut);
   });
 

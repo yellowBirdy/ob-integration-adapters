@@ -151,6 +151,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
      
         const fees: bigint[] = [];
         const lpFees: bigint[] = [];
+        const protocolFees: bigint[] = [];
         const feeQueryResult = await this.client.multicall({
           contracts: getFeesCalls,
         })
@@ -158,8 +159,9 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
 
         for (const result of feeQueryResult) {
           const [lpFee, backstopFee, protocolFee] = result.result as bigint[];
-          fees.push(backstopFee as bigint + (protocolFee as bigint));
+          fees.push(backstopFee as bigint);
           lpFees.push(lpFee as bigint);
+          protocolFees.push(protocolFee as bigint);
         }
         const getCurveAddressCalls: any[] = pools.map(pool => ({
           address: pool,
@@ -222,6 +224,8 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
             const fee1 = fees[j] as bigint;
             const lpFee0 = lpFees[i] as bigint;
             const lpFee1 = lpFees[j] as bigint;
+            const protocolFee0 = protocolFees[i] as bigint;
+            const protocolFee1 = protocolFees[j] as bigint;
             const assetDecimals0 = Number(assetDecimals[i]);
             const assetDecimals1 = Number(assetDecimals[j]);
             const beta0 = curveBetas[i] as bigint;
@@ -243,6 +247,8 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
               fee1,
               lpFee0,
               lpFee1,
+              protocolFee0,
+              protocolFee1,
               totalLiabilities0,
               totalLiabilities1,
               assetDecimals0,
@@ -503,7 +509,7 @@ export class NablaPoolProvider extends BasePoolStateProvider<NablaPoolState> {
         const pairPrice = price0.price * PRICE_SCALING_FACTOR / price1.price;
         const reversedPairPrice = price1.price * PRICE_SCALING_FACTOR / price0.price;
 
-        const oldestPublishTime = price0.publish_time > price1.publish_time ? price1.publish_time : publish_time;
+        const oldestPublishTime = price0.publish_time > price1.publish_time ? price1.publish_time : price0.publish_time;
 
         this.updateOraclePrice(virtualAddress, pairPrice, reversedPairPrice, this.priceFeedUpdate?.binary.data || [], oldestPublishTime);
       }
