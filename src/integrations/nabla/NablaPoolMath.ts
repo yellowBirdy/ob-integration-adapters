@@ -104,7 +104,7 @@ export class NablaPoolMath extends BasePoolMath<NablaPoolState> {
       reserveWithSlippageAfterAmountOut = reserveWithSlippageOut;
     }
     // @dev 1% of total liabilities
-    const minReserveWithSlippageAfterAmountOut = (10000n * totalLiabilitiesIn) / 1000000n;
+    const minReserveWithSlippageAfterAmountOut = (10000n * totalLiabilitiesOut) / 1000000n;
     if (reserveWithSlippageAfterAmountOut <= minReserveWithSlippageAfterAmountOut){
       return 0n;
     }
